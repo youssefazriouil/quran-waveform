@@ -2,14 +2,15 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTimer } from 'hooks/use-timer';
 import Wave from 'components/Wave';
 import { RecordButton } from 'components/RecordButton';
+import { formatSecondsToTime } from 'helpers';
+// import MicrophonePlugin from 'wavesurfer.js/src/plugin/microphone';
 
 const RecordAudio = () => {
   const [isRecording, setRecording] = useState(false);
   const [waves, setWaves] = useState<string[]>([]);
-  console.log('waves top', waves);
-  const [startTime, setStartTime] = useState<number>();
   const { time, startTimer, stopTimer } = useTimer();
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
+  const wavesurfer = useRef<WaveSurfer | null>(null);
 
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -29,15 +30,15 @@ const RecordAudio = () => {
   let chunks: Blob[] = [];
 
   const handleRecord = () => {
+    startTimer();
     setRecording(true);
-    setStartTime(Date.now());
     mediaRecorder?.start();
     console.log(mediaRecorder?.state);
   };
 
   const handleStop = () => {
+    stopTimer();
     setRecording(false);
-    setStartTime(0);
     mediaRecorder?.stop();
   };
 
@@ -57,12 +58,20 @@ const RecordAudio = () => {
 
   return (
     <div className='RecordAudio'>
-      <div className='bg-rose-100 p-4 mb-4 rounded-sm'>
+      <div className='bg-rose-100 p-4 mb-4 rounded-sm flex items-center'>
         <RecordButton
           handleRecord={handleRecord}
           handleStop={handleStop}
           isRecording={isRecording}
         />
+        <span
+          className={`ml-2 transition-all duration-300 ${
+            isRecording ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {formatSecondsToTime(time)}
+        </span>
+        <div id='speech'></div>
       </div>
       {waves.map((wave, index) => (
         <Fragment key={index}>

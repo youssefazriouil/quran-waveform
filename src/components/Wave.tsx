@@ -34,7 +34,6 @@ interface WaveAudioProps {
 }
 
 const Wave = ({ audioURL, className, index }: WaveAudioProps) => {
-  const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null);
 
   useEffect(() => {
@@ -59,11 +58,7 @@ const Wave = ({ audioURL, className, index }: WaveAudioProps) => {
 
   return (
     <div className={`${className} mb-8`}>
-      <div
-        id={`waveform${index}`}
-        ref={waveformRef}
-        className='border relative'
-      ></div>
+      <div id={`waveform${index}`} className='border relative'></div>
       <button className='border p-2 mt-4 mb-4' onClick={handlePlayPause}>
         Play / Pause
       </button>
