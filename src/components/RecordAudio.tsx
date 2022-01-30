@@ -1,9 +1,10 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import { useTimer } from 'hooks/use-timer';
 import Wave from 'components/Wave';
 import { RecordButton } from 'components/RecordButton';
 import { formatSecondsToTime } from 'helpers';
-// import MicrophonePlugin from 'wavesurfer.js/src/plugin/microphone';
+import MicrophonePlugin from 'wavesurfer.js/src/plugin/microphone';
+import { WaveSurferParams } from 'wavesurfer.js/types/params';
 
 const RecordAudio = () => {
   const [isRecording, setRecording] = useState(false);
@@ -12,53 +13,65 @@ const RecordAudio = () => {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
   const wavesurfer = useRef<WaveSurfer | null>(null);
 
-  useEffect(() => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          setMediaRecorder(new MediaRecorder(stream));
-        })
-        .catch(function (err) {
-          console.log('The following getUserMedia error occurred: ' + err);
-        });
-    } else {
-      console.log('getUserMedia not supported on your browser!');
-    }
-  }, []);
+  const getWaveFormOptions = (cssSelector: string): WaveSurferParams => ({
+    container: cssSelector,
+    waveColor: 'black',
+    interact: false,
+    cursorWidth: 0,
+    // height: isRecording ? 128 : 0,
+    plugins: [
+      MicrophonePlugin.create({
+        constraints: { audio: true, video: false },
+      }),
+    ],
+  });
 
   let chunks: Blob[] = [];
 
-  const handleRecord = () => {
+  const handleRecord = async () => {
     startTimer();
     setRecording(true);
-    mediaRecorder?.start();
-    console.log(mediaRecorder?.state);
+    if (!wavesurfer.current) {
+      const WaveSurfer = (await import('wavesurfer.js')).default;
+      const options = getWaveFormOptions(`#speech`);
+      wavesurfer.current = WaveSurfer.create(options);
+      createWaveForm();
+    }
+    wavesurfer.current?.microphone.start();
   };
 
   const handleStop = () => {
     stopTimer();
     setRecording(false);
+    wavesurfer.current?.microphone.stop();
     mediaRecorder?.stop();
   };
 
-  if (mediaRecorder) {
-    mediaRecorder.ondataavailable = function (e) {
-      chunks.push(e.data);
-    };
-    mediaRecorder.onstop = function () {
-      console.log('recorder stopped');
+  const createWaveForm = () => {
+    wavesurfer.current?.microphone.on('deviceReady', (stream: MediaStream) => {
+      const newMediaRecorder = new MediaRecorder(stream);
+      setMediaRecorder(newMediaRecorder);
+      newMediaRecorder.start();
 
-      const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-      chunks = [];
-      const wave = window.URL.createObjectURL(blob);
-      wave && setWaves((waves) => waves.concat(wave));
-    };
-  }
+      newMediaRecorder.ondataavailable = (event) => {
+        chunks.push(event.data);
+      };
+
+      newMediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
+        const wave = window.URL.createObjectURL(blob);
+        wave && setWaves((waves) => waves.concat(wave));
+      };
+    });
+  };
 
   return (
     <div className='RecordAudio'>
-      <div className='bg-rose-100 p-4 mb-4 rounded-sm flex items-center'>
+      <div
+        className={`bg-rose-100 p-4 mb-4 rounded-sm items-center transition-all ${
+          isRecording ? 'max-h-48' : 'max-h-16'
+        }`}
+      >
         <RecordButton
           handleRecord={handleRecord}
           handleStop={handleStop}
