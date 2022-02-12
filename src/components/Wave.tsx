@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { WaveSurferParams } from 'wavesurfer.js/types/params';
 import CursorPlugin from 'wavesurfer.js/src/plugin/cursor';
 
@@ -43,7 +43,7 @@ const Wave = ({ audioURL, className, index }: WaveAudioProps) => {
         wavesurfer.current.destroy();
       }
     };
-  }, []);
+  }, [audioURL]);
 
   const createWaveForm = async () => {
     const WaveSurfer = (await import('wavesurfer.js')).default;
@@ -57,11 +57,14 @@ const Wave = ({ audioURL, className, index }: WaveAudioProps) => {
   };
 
   return (
-    <div className={`${className} mb-8`}>
+    <div className={`${className || ''} mb-8`}>
       <div id={`waveform${index}`} className='border relative'></div>
       <button className='border p-2 mt-4 mb-4' onClick={handlePlayPause}>
         Play / Pause
       </button>
+      <span>{`${wavesurfer.current
+        ?.getCurrentTime()
+        .toFixed(2)} / ${wavesurfer.current?.getDuration().toFixed(2)}`}</span>
       <hr />
     </div>
   );

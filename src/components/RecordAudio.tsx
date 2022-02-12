@@ -1,24 +1,27 @@
-import { Fragment, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTimer } from 'hooks/use-timer';
 import Wave from 'components/Wave';
 import { RecordButton } from 'components/RecordButton';
 import { formatSecondsToTime } from 'helpers';
 import MicrophonePlugin from 'wavesurfer.js/src/plugin/microphone';
 import { WaveSurferParams } from 'wavesurfer.js/types/params';
+import { useAtom } from 'jotai';
+import { updateWavesAtom } from 'store/waveforms';
 
 const RecordAudio = () => {
   const [isRecording, setRecording] = useState(false);
-  const [waves, setWaves] = useState<string[]>([]);
-  const { time, startTimer, stopTimer } = useTimer();
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
+  const [waves, addToWaves] = useAtom(updateWavesAtom);
+
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null);
+  const audioChunks = useRef<Blob[]>([]);
+  const { time, startTimer, stopTimer } = useTimer();
 
   const getWaveFormOptions = (cssSelector: string): WaveSurferParams => ({
     container: cssSelector,
     waveColor: 'black',
     interact: false,
     cursorWidth: 0,
-    // height: isRecording ? 128 : 0,
     plugins: [
       MicrophonePlugin.create({
         constraints: { audio: true, video: false },
@@ -26,43 +29,68 @@ const RecordAudio = () => {
     ],
   });
 
-  let chunks: Blob[] = [];
-
-  const handleRecord = async () => {
+  const startRecording = () => {
     startTimer();
     setRecording(true);
-    if (!wavesurfer.current) {
-      const WaveSurfer = (await import('wavesurfer.js')).default;
-      const options = getWaveFormOptions(`#speech`);
-      wavesurfer.current = WaveSurfer.create(options);
-      createWaveForm();
-    }
+    audioChunks.current = [];
     wavesurfer.current?.microphone.start();
   };
 
-  const handleStop = () => {
+  const stopRecording = () => {
     stopTimer();
     setRecording(false);
     wavesurfer.current?.microphone.stop();
-    mediaRecorder?.stop();
+    mediaRecorder?.current?.stop();
   };
 
-  const createWaveForm = () => {
-    wavesurfer.current?.microphone.on('deviceReady', (stream: MediaStream) => {
-      const newMediaRecorder = new MediaRecorder(stream);
-      setMediaRecorder(newMediaRecorder);
-      newMediaRecorder.start();
+  useEffect(() => {
+    const initWaveSurfer = async () => {
+      if (!wavesurfer.current) {
+        const WaveSurfer = (await import('wavesurfer.js')).default;
+        const options = getWaveFormOptions(`#speech`);
+        wavesurfer.current = WaveSurfer.create(options);
+      }
+    };
+    initWaveSurfer();
+  }, []);
 
-      newMediaRecorder.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
+  useEffect(() => {
+    wavesurfer.current?.microphone &&
+      wavesurfer.current?.microphone.on(
+        'deviceReady',
+        (stream: MediaStream) => {
+          mediaRecorder.current = new MediaRecorder(stream);
+          mediaRecorder.current?.addEventListener(
+            'dataavailable',
+            handleDataAvailable
+          );
+          mediaRecorder.current?.addEventListener(
+            'stop',
+            handleStopMediaRecorder
+          );
+          mediaRecorder.current?.start();
+        }
+      );
+  }, [wavesurfer.current?.microphone]);
 
-      newMediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-        const wave = window.URL.createObjectURL(blob);
-        wave && setWaves((waves) => waves.concat(wave));
-      };
+  const handleDataAvailable = (e: BlobEvent) => {
+    audioChunks.current.push(e.data);
+  };
+
+  const handleStopMediaRecorder = () => {
+    const blob = new Blob(audioChunks.current, {
+      type: 'audio/ogg; codecs=opus',
     });
+    const wave = window.URL.createObjectURL(blob);
+
+    if (wave) addToWaves(wave);
+
+    mediaRecorder.current?.removeEventListener(
+      'dataavailable',
+      handleDataAvailable
+    );
+    mediaRecorder.current?.removeEventListener('stop', handleStopMediaRecorder);
+    mediaRecorder.current = null;
   };
 
   return (
@@ -73,8 +101,8 @@ const RecordAudio = () => {
         }`}
       >
         <RecordButton
-          handleRecord={handleRecord}
-          handleStop={handleStop}
+          handleRecord={startRecording}
+          handleStop={stopRecording}
           isRecording={isRecording}
         />
         <span
@@ -87,9 +115,7 @@ const RecordAudio = () => {
         <div id='speech'></div>
       </div>
       {waves.map((wave, index) => (
-        <Fragment key={index}>
-          <Wave audioURL={wave} index={index} />
-        </Fragment>
+        <Wave audioURL={wave} key={index} index={index} />
       ))}
     </div>
   );
