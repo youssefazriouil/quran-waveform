@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTimer } from 'hooks/use-timer';
 import Wave from 'components/Wave';
 import { RecordButton } from 'components/RecordButton';
@@ -34,12 +34,14 @@ const RecordAudio = () => {
     setRecording(true);
     audioChunks.current = [];
     wavesurfer.current?.microphone.start();
+    wavesurfer.current?.play();
   };
 
   const stopRecording = () => {
     stopTimer();
     setRecording(false);
     wavesurfer.current?.microphone.stop();
+    wavesurfer.current?.stop();
     mediaRecorder?.current?.stop();
   };
 
