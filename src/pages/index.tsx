@@ -1,7 +1,8 @@
+// import RecordAudio2 from 'components/RecordAudio2';
 import type { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
-const RecordAudio = dynamic(() => import('../components/RecordAudio'), {
+const RecordAudio2 = dynamic(() => import('../components/RecordAudio2'), {
   ssr: false,
 });
 
@@ -14,7 +15,8 @@ const Home: NextPage = () => {
         <link rel='icon' href='/favicon.ico' />
       </Head>
       <div className='w-5/6 m-auto mt-8'>
-        <RecordAudio />
+        {/* <RecordAudio /> */}
+        <RecordAudio2 />
       </div>
     </div>
   );
