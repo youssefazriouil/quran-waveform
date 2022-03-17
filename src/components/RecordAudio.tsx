@@ -19,7 +19,7 @@ export default () => {
   const initWaveform = async () => {
     wavesurfer.current = (await import('wavesurfer.js')).default.create({
       container: '#speech',
-      waveColor: 'black',
+      waveColor: '#262626',
       interact: false,
       cursorWidth: 0,
       plugins: [
@@ -34,11 +34,9 @@ export default () => {
     wavesurfer.current?.microphone.once(
       'deviceReady',
       (stream: MediaStream) => {
-        console.log('entering nandleStartMediaRecorder');
         mediaRecorder.current = new MediaRecorder(stream);
         mediaRecorder.current?.start();
         mediaRecorder.current.ondataavailable = (e: BlobEvent) => {
-          console.log('pushing a blob');
           audioChunks.current.push(e.data);
         };
         mediaRecorder.current.onstop = () => {
@@ -69,7 +67,7 @@ export default () => {
   };
 
   return (
-    <div className='RecordAudio'>
+    <>
       <div
         className={`bg-rose-100 p-4 mb-4 rounded-sm items-center transition-all ${
           isRecording ? 'max-h-48' : 'max-h-16'
@@ -87,11 +85,11 @@ export default () => {
         >
           {formatSecondsToTime(time)}
         </span>
-        <div id='speech'></div>
+        <div id='speech' className='max-w-5xl'></div>
       </div>
       {waves.map((wave, index) => (
         <Wave audioURL={wave} key={index} index={index} />
       ))}
-    </div>
+    </>
   );
 };

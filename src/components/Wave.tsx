@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WaveSurferParams } from 'wavesurfer.js/types/params';
 import CursorPlugin from 'wavesurfer.js/src/plugin/cursor';
+import { FaPlay, FaStop, FaPause, FaCommentAlt } from 'react-icons/fa';
+import { Button } from './Button';
 
 const getWaveFormOptions = (cssSelector: string): WaveSurferParams => ({
   container: cssSelector,
@@ -34,6 +36,11 @@ interface WaveAudioProps {
 }
 
 const Wave = ({ audioURL, className, index }: WaveAudioProps) => {
+  const [isPlaying, setPlaying] = useState(false);
+  const waveRef = useRef<HTMLDivElement>(null);
+  const [showAddComment, setShowAddComment] = useState(false);
+  const [openComment, setOpenComment] = useState(false);
+  const [left, setLeft] = useState(0);
   const wavesurfer = useRef<WaveSurfer | null>(null);
 
   useEffect(() => {
@@ -50,18 +57,44 @@ const Wave = ({ audioURL, className, index }: WaveAudioProps) => {
     const options = getWaveFormOptions(`#waveform${index}`);
     wavesurfer.current = WaveSurfer.create(options);
     wavesurfer.current.load(audioURL);
+
+    wavesurfer.current.on('seek', (position: number) => {
+      if (waveRef.current) {
+        const waveDim = waveRef.current.getBoundingClientRect();
+        setLeft(waveDim.width * position);
+        setShowAddComment(true);
+      }
+    });
   };
 
   const handlePlayPause = () => {
-    wavesurfer.current && wavesurfer.current.playPause();
+    if (wavesurfer.current) {
+      wavesurfer.current.playPause();
+      setPlaying(wavesurfer.current?.isPlaying());
+    }
   };
 
   return (
-    <div className={`${className || ''} mb-8`}>
-      <div id={`waveform${index}`} className='border relative'></div>
-      <button className='border p-2 mt-4 mb-4' onClick={handlePlayPause}>
-        Play / Pause
+    <div className={`${className || ''} mb-8 relative`} ref={waveRef}>
+      <div id={`waveform${index}`} className='border relative rounded-md'></div>
+      <button
+        type='button'
+        className='absolute'
+        style={{ left: left - 11 }}
+        onClick={() => setOpenComment(true)}
+      >
+        {<FaCommentAlt />}
       </button>
+      {openComment && (
+        <div className='w-full min-h-[100px] border rounded-md p-4'>Hallo</div>
+      )}
+      <Button onClick={handlePlayPause}>
+        {isPlaying ? <FaPause /> : <FaPlay />}
+      </Button>
+      <Button onClick={() => null}>
+        <FaStop />
+      </Button>
+
       <span>{`${wavesurfer.current
         ?.getCurrentTime()
         .toFixed(2)} / ${wavesurfer.current?.getDuration().toFixed(2)}`}</span>
