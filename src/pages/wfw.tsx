@@ -1,6 +1,5 @@
 import { GetStaticProps } from 'next';
 import suwar from '../suwarData';
-import Image from 'next/image';
 import Link from 'next/link';
 
 const WordForWord = () => {
@@ -18,7 +17,7 @@ const WordForWord = () => {
         <div className='space-y-6'>
           {suwar.map((surah, index) => (
             <Link href={`surah/${surah.number}`} key={index}>
-              <div className='bg-sand-200 flex items-center rounded hover:bg-sand-300 cursor-pointer'>
+              <div className='bg-sand-200 flex items-center rounded hover:bg-sand-300 cursor-pointer transition-colors'>
                 <img
                   className='max-h-[100px]'
                   src={surah.logoUrl}

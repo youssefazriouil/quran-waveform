@@ -2,6 +2,7 @@ import router, { useRouter } from 'next/router';
 import { GetStaticPaths, GetStaticProps } from 'next/types';
 import suwarData from 'suwarData';
 import { FaChevronLeft as BackIcon } from 'react-icons/fa';
+import { trpc } from 'utils/trpc';
 
 interface SurahPageProps {
   name: string;
@@ -10,6 +11,12 @@ interface SurahPageProps {
 }
 
 const SurahPage = ({ logoUrl, name, number }: SurahPageProps) => {
+  const { data, isLoading } = trpc.useQuery(
+    ['get-surah-by-number', { surahNumber: number }],
+    { enabled: !!number }
+  );
+
+  if (isLoading) return <div>Loading...</div>;
   return (
     <main className='p-10 bg-sand-100 w-full min-h-screen'>
       <BackIcon
@@ -18,7 +25,13 @@ const SurahPage = ({ logoUrl, name, number }: SurahPageProps) => {
       />
       <img src={logoUrl} className='w-[300px] m-auto' />
       <h2 className='text-xl text-center'>{`${number}. ${name}`}</h2>
-      <section></section>
+      <section dir='rtl'>
+        {data?.surah?.ayahs?.map((ayah, index) => (
+          <div key={index} className='text-2xl'>
+            {ayah.number} - {ayah.text}
+          </div>
+        ))}
+      </section>
     </main>
   );
 };
