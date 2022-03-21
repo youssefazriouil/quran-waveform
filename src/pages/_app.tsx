@@ -5,7 +5,7 @@ import { Provider as JotaiProvider } from 'jotai';
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <JotaiProvider>
-      <Component {...pageProps} />;
+      <Component {...pageProps} />
     </JotaiProvider>
   );
 }
