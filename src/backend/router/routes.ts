@@ -2,7 +2,7 @@ import { z } from 'zod';
 import * as trpc from '@trpc/server';
 
 interface Ayah {
-  number: number;
+  numberInSurah: number;
   text: string;
 }
 

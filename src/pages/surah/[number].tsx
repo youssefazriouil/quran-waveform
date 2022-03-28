@@ -28,7 +28,7 @@ const SurahPage = ({ logoUrl, name, number }: SurahPageProps) => {
       <section dir='rtl'>
         {data?.surah?.ayahs?.map((ayah, index) => (
           <div key={index} className='text-2xl'>
-            {ayah.number} - {ayah.text}
+            {ayah.numberInSurah} - {ayah.text}
           </div>
         ))}
       </section>
